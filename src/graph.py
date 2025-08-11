@@ -3,15 +3,13 @@ from typing import TypedDict, Annotated
 import operator
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage, ToolMessage
 from langchain_openai import ChatOpenAI
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import ChatOpenAI
-from langchain_tavily import TavilySearch
 from langchain.tools import tool
 from requests import Request, Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 import json #the format we want to retrieve
 import pprint
-from tools.tools import TOOLs
+from src.tools.tools import TOOLs
 import asyncio
 
 import logging  # Import Python's built-in logging module
@@ -22,7 +20,7 @@ os.makedirs("logs", exist_ok=True)  # Create a "logs" directory if it doesn't ex
 logger = logging.getLogger("file_api_logger")  # Create a custom logger named "file_api_logger"
 logger.setLevel(logging.INFO)  # Set logging level to INFO
 
-file_handler = logging.FileHandler("logs/app.log")  # Log messages will be written to logs/app.log
+file_handler = logging.FileHandler("src/logs/app.log")  # Log messages will be written to logs/app.log
 
 formatter = logging.Formatter(  # Define the format of log messages
     "%(asctime)s, %(api_path)s, %(levelname)s, %(message)s",
