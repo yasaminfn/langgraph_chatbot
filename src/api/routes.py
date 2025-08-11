@@ -84,7 +84,7 @@ async def chat_endpoint(req: Question):
         raise HTTPException(status_code=500, detail=str(e))
     
 # ----- Streaming Chat Endpoint -----
-@router.post("/chat/stream")
+@router.post("/stream")
 async def chat_stream(req: Question):
     """
     Streaming chat endpoint.
