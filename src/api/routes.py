@@ -82,4 +82,34 @@ async def chat_endpoint(req: Question):
     except Exception as e:
         logging.error(f"Error during chat request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+# ----- Streaming Chat Endpoint -----
+@router.post("/chat/stream")
+async def chat_stream(req: Question):
+    """
+    Streaming chat endpoint.
+    Streams partial responses (chunks) from the model as they are generated.
+    """
+    session_id = get_session_id(req.session_id)
+    config = {"configurable": {"thread_id": session_id}}
+    messages = [HumanMessage(content=req.query)]
+
+    async def event_generator():
+        """Yields model output chunks for StreamingResponse."""
+        
+        try:
+            # Stream LangGraph events asynchronously
+            async for event in abot.graph.astream_events({"messages": messages}, config):
+                if event["event"] == "on_chat_model_stream":
+                    chunk = event["data"]["chunk"].content
+                    if chunk:
+                        # Yield each chunk of the response immediately
+                        yield chunk
+            yield "\n"  # End of stream
+        except Exception as e:
+            logging.error(f"Error during streaming chat: {e}",exc_info=True)  # exc_info=True ensures full traceback is logged
+            yield f"\n[Error]: {e}\n"
+            
+    # StreamingResponse sends chunks to the client as they are yielded
+    return StreamingResponse(event_generator(), media_type="text/plain")
 
