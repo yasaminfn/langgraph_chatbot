@@ -8,7 +8,7 @@ from langchain_core.messages import HumanMessage
 import logging, os
 from dotenv import load_dotenv
 import uuid
-
+from src.db.crud import save_message_to_db
 
 router = APIRouter()
 
@@ -73,10 +73,14 @@ async def chat_endpoint(req: Question):
         config = {"configurable": {"thread_id": session_id}}
         # Create message from user query
         messages = [HumanMessage(content=req.query)]
+        # Save message to chat_history table in postgres
+        await save_message_to_db(session_id, "user", req.query)
         # Invoke the agent (sync)
         result = await abot.graph.ainvoke({"messages": messages}, config)
         # Extract the response content
         response = result["messages"][-1].content
+        # Save assiatant message to chat_history table in postgres
+        await save_message_to_db(session_id, "assistant", response)
         logging.info(f"Session {session_id} | Query: {req.query} | Response: {response[:50]}...")
         return {"response": response, "session id": session_id}
     except Exception as e:
@@ -93,18 +97,27 @@ async def chat_stream(req: Question):
     session_id = get_session_id(req.session_id)
     config = {"configurable": {"thread_id": session_id}}
     messages = [HumanMessage(content=req.query)]
-
+    # Save user message to chat_history table in postgres
+    await save_message_to_db(session_id, "user", req.query)
+    
+    full_response = ""
+    
     async def event_generator():
         """Yields model output chunks for StreamingResponse."""
         
+        nonlocal full_response
         try:
             # Stream LangGraph events asynchronously
             async for event in abot.graph.astream_events({"messages": messages}, config):
                 if event["event"] == "on_chat_model_stream":
                     chunk = event["data"]["chunk"].content
                     if chunk:
+                        # Add chunk to full response
+                        full_response += chunk
                         # Yield each chunk of the response immediately
                         yield chunk
+            # Save the full_response to chat_history in postgres db              
+            await save_message_to_db(session_id, "assistant", full_response)
             yield "\n"  # End of stream
         except Exception as e:
             logging.error(f"Error during streaming chat: {e}",exc_info=True)  # exc_info=True ensures full traceback is logged
