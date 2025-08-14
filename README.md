@@ -82,7 +82,7 @@ pip install -r requirements.txt
 #### Backend (FastAPI)
 
 ```bash
-uvicorn api.main:app --reload
+uvicorn src.api.main:app --reload
 ```
 Endpoints:
 
@@ -93,7 +93,7 @@ Endpoints:
 #### Frontend (Streamlit)
 
 ```bash
-streamlit run app/app.py
+streamlit run src/app/app.py
 ```
 
 ### Usage
